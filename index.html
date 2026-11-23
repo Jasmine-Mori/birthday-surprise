@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#027d68">
+  <title>旬，生日快乐</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { background: #027d68; color: #fff5df; font-family: system-ui, sans-serif; touch-action: none; }
+    #canvas { display: block; width: 100%; height: 100%; outline: none; }
+    #welcome { position: fixed; inset: 0; z-index: 3; display: grid; place-items: center;
+      padding: 24px; background: #027d68; text-align: center; }
+    .card { max-width: 520px; }
+    .cake { font-size: 54px; margin: 0 0 20px; }
+    h1 { font-size: clamp(26px, 5vw, 42px); margin: 0 0 18px; font-weight: 600; }
+    p { line-height: 1.8; margin: 10px 0; }
+    button { border: 2px solid #fff5df; border-radius: 4px; padding: 13px 38px;
+      margin: 22px 0 12px; background: #fff5df; color: #245b4f;
+      font: 600 18px system-ui, sans-serif; cursor: pointer; min-height: 48px; }
+    button:disabled { opacity: .65; cursor: wait; }
+    button:focus-visible { outline: 3px solid #ffc1d3; outline-offset: 5px; }
+    #progress { display: none; width: 80%; height: 12px; accent-color: #ffd6b7; margin: 16px auto; }
+    .note { font-size: 13px; opacity: .8; }
+    #message { font-size: 14px; white-space: pre-line; }
+    #rotate { display: none; position: fixed; left: 0; right: 0;
+      top: env(safe-area-inset-top, 0); text-align: center; pointer-events: none;
+      padding: 10px; font-size: 13px; background: #174b3f; z-index: 2; }
+    @media (orientation: portrait) { #rotate { display: block; } }
+  </style>
+  <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+
+</head>
+<body>
+  <canvas id="canvas" tabindex="0">请使用支持 WebGL 2 的浏览器打开。</canvas>
+  <div id="rotate">横过来，惊喜会看得更完整。</div>
+  <main id="welcome">
+    <div class="card">
+      <div class="cake" aria-hidden="true">🎂</div>
+      <h1>旬，生日快乐</h1>
+      <p>筱晗为你准备了一份小惊喜。</p>
+      <button id="start" type="button">打开惊喜</button>
+      <progress id="progress" aria-label="加载进度"></progress>
+      <p id="message" role="status" aria-live="polite">建议横屏，打开声音，慢慢探索。</p>
+      <p class="note">首次打开需要下载游戏，请稍等片刻。</p>
+    </div>
+  </main>
+  <noscript>请在浏览器中开启 JavaScript。</noscript>
+  <script src="index.js"></script>
+  <script>
+    const config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":14774952,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+    const engine = new Engine(config);
+    const start = document.getElementById('start');
+    const message = document.getElementById('message');
+    const progress = document.getElementById('progress');
+    const canvas = document.getElementById('canvas');
+    const missing = Engine.getMissingFeatures({threads: false});
+    if (missing.length) {
+      start.disabled = true;
+      message.textContent = '当前浏览器暂不支持运行游戏。\n请试试最新版 Chrome、Edge 或 Safari。';
+    }
+    start.addEventListener('click', async () => {
+      start.disabled = true;
+      start.textContent = '正在打开…';
+      message.textContent = '惊喜准备中，请稍候…';
+      progress.style.display = 'block';
+      if (navigator.maxTouchPoints > 0 && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().then(() => {
+          if (screen.orientation && screen.orientation.lock) {
+            return screen.orientation.lock('landscape').catch(() => {});
+          }
+        }).catch(() => {});
+      }
+      try {
+        await engine.startGame({
+          canvas,
+          onProgress(current, total) {
+            if (total > 0) {
+              progress.max = total;
+              progress.value = current;
+              message.textContent = `惊喜准备中… ${Math.min(100, Math.round(current / total * 100))}%`;
+            }
+          }
+        });
+        document.getElementById('welcome').remove();
+        canvas.focus();
+      } catch (error) {
+        console.error(error);
+        message.textContent = '加载没有完成，请检查网络后刷新重试。\n如果在微信里打开，请选择「在浏览器打开」。';
+        start.textContent = '刷新重试';
+        start.disabled = false;
+        start.onclick = () => location.reload();
+      }
+    }, {once: true});
+  </script>
+</body>
+</html>
+
